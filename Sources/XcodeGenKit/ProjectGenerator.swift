@@ -27,8 +27,8 @@ public class ProjectGenerator {
         let pbxProjGenerator = PBXProjGenerator(spec: spec, currentXcodeVersion: currentXcodeVersion)
         let pbxProject = try pbxProjGenerator.generate()
         let workspace = try generateWorkspace()
-        let sharedData = try generateSharedData(pbxProject: pbxProject)
-        return XcodeProj(workspace: workspace, pbxproj: pbxProject, sharedData: sharedData)
+        let sharedData = try generateSharedData(pbxProject: pbxProject.project)
+        return XcodeProj(workspace: workspace, pbxproj: pbxProject.project, sharedData: sharedData)
     }
 
     func generateWorkspace() throws -> XCWorkspace {
@@ -41,9 +41,12 @@ public class ProjectGenerator {
 
         func getBuildEntry(_ buildTarget: Scheme.BuildTarget) -> XCScheme.BuildAction.Entry {
 
-            let targetReference = pbxProject.objects.nativeTargets.referenceValues.first { $0.name == buildTarget.target }!
+            let target = pbxProject.objects.nativeTargets.first(where: {$0.value.name == buildTarget.target})!
 
-            let buildableReference = XCScheme.BuildableReference(referencedContainer: "container:\(spec.name).xcodeproj", blueprintIdentifier: targetReference.reference, buildableName: "\(buildTarget.target).\(targetReference.productType!.fileExtension!)", blueprintName: scheme.name)
+            let buildableReference = XCScheme.BuildableReference(referencedContainer: "container:\(spec.name).xcodeproj",
+                blueprintIdentifier: target.key,
+                buildableName: "\(buildTarget.target).\(target.value.productType!.fileExtension!)",
+                blueprintName: scheme.name)
 
             return XCScheme.BuildAction.Entry(buildableReference: buildableReference, buildFor: buildTarget.buildTypes)
         }
